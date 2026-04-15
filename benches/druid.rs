@@ -1,30 +1,29 @@
-use criterion::{Criterion, PlotConfiguration, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main};
 use rayon::prelude::*;
-use std::time::Duration;
 fn gen_id() {
     (0..10).collect::<Vec<u64>>().par_iter().for_each(|_| {
-        for i in 0..100 {
+        for _ in 0..100 {
             druid::Druid::default();
         }
     });
 }
 fn gen_idv7() {
     (0..10).collect::<Vec<u64>>().par_iter().for_each(|_| {
-        for i in 0..100 {
+        for _ in 0..100 {
             druid::DruidV7::default();
         }
     });
 }
 fn cuid() {
     (0..10).collect::<Vec<u64>>().par_iter().for_each(|_| {
-        for i in 0..100 {
+        for _ in 0..100 {
             cuid2::cuid();
         }
     });
 }
 fn gen_uuidv4() {
     (0..10).collect::<Vec<u64>>().par_iter().for_each(|_| {
-        for i in 0..100 {
+        for _ in 0..100 {
             uuid::Uuid::new_v4();
         }
     });

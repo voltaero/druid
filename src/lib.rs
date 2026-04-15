@@ -1,36 +1,41 @@
-use chrono::{DateTime, Utc};
-mod compute;
 use rand::prelude::*;
-use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 const VERSION: u8 = 0;
+
+#[inline]
+fn bytes_to_hex(bytes: &[u8]) -> String {
+    const LUT: &[u8; 16] = b"0123456789abcdef";
+    let mut out = vec![0u8; bytes.len() * 2];
+    for (i, &b) in bytes.iter().enumerate() {
+        out[i * 2] = LUT[(b >> 4) as usize];
+        out[i * 2 + 1] = LUT[(b & 0x0f) as usize];
+    }
+    // Safety: `out` is guaranteed ASCII (valid UTF-8).
+    unsafe { String::from_utf8_unchecked(out) }
+}
+
 pub struct Druid {
     pub id: [u8; 40],
 }
 impl Default for Druid {
+    #[inline]
     fn default() -> Self {
         let timestamp: u128 = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let mut bytes: [u8; 23] = [0u8; 23];
-
-        rand::rng().fill_bytes(&mut bytes);
-
         let mut id = [0u8; 40];
         id[0..16].copy_from_slice(&timestamp.to_be_bytes());
-        id[16..39].copy_from_slice(&bytes);
+        let mut rng = rand::rng();
+        rng.fill_bytes(&mut id[16..39]);
         id[39] = VERSION; //version byte
         Self { id }
     }
 }
 impl Druid {
+    #[inline]
     pub fn to_hex(&self) -> String {
-        let bytes = self.id;
-        let hex_string: String = bytes
-            .iter()
-            .map(|byte| format!("{:02x}", byte)) // Format each byte as a 2-digit hex
-            .collect();
-        hex_string
+        bytes_to_hex(&self.id)
     }
 }
 
@@ -38,32 +43,26 @@ pub struct DruidV7 {
     pub id: [u8; 16],
 }
 impl Default for DruidV7 {
+    #[inline]
     fn default() -> Self {
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+        let timestamp_ms: u64 =
+            now.as_secs().saturating_mul(1_000) + u64::from(now.subsec_millis());
+        let timestamp = timestamp_ms.to_be_bytes();
+
         let mut bytes: [u8; 16] = [0u8; 16];
-        let timestamp: [u8; 16] = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis()
-            .to_be_bytes();
-        rand::rng().fill_bytes(&mut bytes);
-        bytes[0] = timestamp[10];
-        bytes[1] = timestamp[11];
-        bytes[2] = timestamp[12];
-        bytes[3] = timestamp[13];
-        bytes[4] = timestamp[14];
-        bytes[5] = timestamp[15];
+        bytes[0..6].copy_from_slice(&timestamp[2..8]); // 48-bit ms timestamp
+
+        let mut rng = rand::rng();
+        rng.fill_bytes(&mut bytes[6..16]);
         bytes[6] = (bytes[6] & 0b00001111) | 0b01110000;
         bytes[8] = (bytes[8] & 0b00111111) | 0b10000000;
         Self { id: bytes }
     }
 }
 impl DruidV7 {
+    #[inline]
     pub fn to_hex(&self) -> String {
-        let bytes = self.id;
-        let hex_string: String = bytes
-            .iter()
-            .map(|byte| format!("{:02x}", byte)) // Format each byte as a 2-digit hex
-            .collect();
-        hex_string
+        bytes_to_hex(&self.id)
     }
 }

@@ -1,13 +1,12 @@
 use druid::*;
-use rand::{seq::SliceRandom, thread_rng};
-use std::hint::black_box;
+use rand::seq::SliceRandom;
 fn main() {
     let mut uids = Vec::new();
     for _ in 0..1000 {
         uids.push(Druid::default().to_hex());
     }
     let org = uids.clone();
-    let mut rng = thread_rng();
+    let mut rng = rand::rng();
     uids.shuffle(&mut rng);
     // uids.sort_by(|a, b| {
     //     let timestamp_a = &a[0..32];
